@@ -3,13 +3,12 @@
 #include <iostream>
 #include <chrono>
 #include <cstdlib>
-#include <SDL.h>
 
 using namespace std;
 
-class Emu {
+class CPU {
 	
-	/*Constants*/
+	//Constants
 	const static int num_registers = 16;
 	const static int ram_size = 4096;
 	const static int stack_size = 16;
@@ -21,34 +20,31 @@ class Emu {
 
 public:
 	//Defining different parts of the emulator.
-	uint8_t registers[num_registers]{};
+	uint8_t registers[num_registers];
 
 	//Points to current instruction.
-	uint16_t program_counter{};
+	uint16_t program_counter;
 
 	//Memory
-	uint8_t ram[ram_size]{};
+	uint8_t ram[ram_size];
 
 	//Index???
-	uint16_t index{};
+	uint16_t index;
 
 	//Stack for memory
-	uint16_t stack[stack_size]{};
-	uint8_t stack_pointer{};
+	uint16_t stack[stack_size];
+	uint8_t stack_pointer;
 
 	//Timers
-	uint8_t delayTimer{};
-	uint8_t soundTimer{};
+	uint8_t delayTimer;
+	uint8_t soundTimer;
 
 	uint8_t opcode;
 
-	uint32_t video[64][32]{};
-
-	SDL_Renderer* renderer;
-	SDL_Window* window;
+	uint32_t video[64][32];
 
 	//Class constructor
-	Emu() {
+	CPU() {
 
 		program_counter = starting_location;
 
@@ -57,12 +53,6 @@ public:
 		{
 			ram[fontset_address0 + i] = fontset[i];
 		}
-
-		SDL_Init(SDL_INIT_VIDEO);
-		SDL_CreateWindowAndRenderer(64, 32, 0, &window, &renderer);
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderClear(renderer);
-		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
 
 	}
