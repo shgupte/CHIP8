@@ -6,8 +6,11 @@
 
 using namespace std;
 
+
+
 class CPU {
-	
+
+private:
 	//Constants
 	const static int num_registers = 16;
 	const static int ram_size = 4096;
@@ -41,10 +44,12 @@ public:
 
 	uint8_t opcode;
 
-	uint32_t video[64][32];
+	unsigned int video[64 * 32];
 
 	//Class constructor
 	CPU() {
+
+		cout << "CPU created";
 
 		program_counter = starting_location;
 
@@ -57,15 +62,20 @@ public:
 
 	}
 
+	~CPU() {
+		cout << "CPU destroyed";
+	}
+
 
 	//This function reads the rom file and places it into the memory, starting at address 0x200.
 	void readROM(char const* filename) {
 		std::ifstream file(filename, std::ios::binary | std::ios::ate);
-
+		std::cout << "Reading ROM...";
 		if (file.is_open())
 		{
 			// Get size of file and allocate a buffer to hold the contents
 			std::streampos size = file.tellg();
+			std::cout << "test";
 			char* buffer = new char[size];
 
 			// Go back to the beginning of the file and fill the buffer
@@ -76,6 +86,7 @@ public:
 			// Load the ROM contents into the Chip8's memory, starting at 0x200
 			for (long i = 0; i < size; ++i)
 			{
+				std:cout << "working";
 				ram[starting_location + i] = buffer[i];
 			}
 
@@ -103,6 +114,45 @@ public:
 		0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
 		0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 	};
+
+
+
+	////////////////////////////// FUNCTIONS ///////////////////////////////
+
+	void execute(uint16_t opc) {
+		switch (opc & 0xF000 >> 12) {
+			case 0:
+				OP_00E0();
+				break;
+			case 1:
+				OP_1NNN();
+				break;
+			case 6:
+				OP_6XKK();
+				break;
+			case 7:
+				OP_7XKK();
+				break;
+			case 0xA:
+				OP_ANNN();
+				break;
+			case 0xD:
+				OP_DXYN();
+				break;
+			default:
+				cout << "Error. Instruction was called for but not found";
+		}
+	}
+
+	uint16_t fetch() {
+		uint16_t opc = (ram[program_counter] << 8) | ram[program_counter + 1]; //Maybe remove the OR
+		program_counter += 2;
+		return opc;
+	}
+
+	void cycleCPU() {
+		execute(fetch());
+	}
 
 	uint8_t randomByte() {
 		return rand() % 256;
@@ -270,11 +320,51 @@ public:
 
 	void OP_DXYN() {
 		unsigned int start_address = index;
-		unsigned int x = (opcode & 0x0F00) >> 8;
-		unsigned int y = (opcode & 0x00F0) >> 4;
+		unsigned int vx = (opcode & 0x0F00) >> 8;
+		unsigned int vy = (opcode & 0x00F0) >> 4;
+		unsigned int x_pos = (registers[vx]) % 64; //Modulus allows these positions to wrap around the screen
+		unsigned int y_pos = (registers[vy]) % 32;
 		unsigned int height = opcode & 0x000F;
+
+		registers[0xF] = 0; //May be set to 1 based on collision.
+		
+		//Drawing row by row using sprite data
+		for (int i = 0; i < height; ++height) {
+			unsigned int sprite = ram[index + i];
+
+			for (int j = 0; i < 8; ++j) {
+				unsigned int spritePixel = sprite & (0x80u >> j); //Pretty sure this is just gettingthe spirte to display? Gotta figure out this math later
+				unsigned int *screenPixel = &video[(y_pos + i) * 32 + (x_pos + j)]; //Using a pointer b/c its in heap memory, always dereferenced when used
+
+				if (spritePixel) {
+					// Screen pixel also on - collision
+					if (*screenPixel == 1) { //1 is on for display pixel, 0 is off
+						registers[0xF] = 1;
+					}
+
+					// Effectively XOR with the sprite pixel
+					*screenPixel ^= 1;
+				}
+			}
+
+
+		}
+
+
 
 	}
 
 };
+
+
+int main(int argc, char *argv[]) {
+	char const* filename = argv[1];
+    std::cout << "Program has started. You have selected to play " << filename << ".";
+    CPU cpu = CPU();
+	cpu.readROM(filename);
+	std::cout << cpu.ram[0x200];
+	
+    return 0;
+} 
+
 
