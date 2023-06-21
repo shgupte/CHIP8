@@ -41,7 +41,7 @@ public:
 	uint8_t delayTimer;
 	uint8_t soundTimer;
 
-	uint8_t opcode;
+	uint16_t opcode;
 
 	unsigned int video[64 * 32];
 
@@ -118,14 +118,16 @@ public:
 
 	////////////////////////////// FUNCTIONS ///////////////////////////////
 
-	void execute(uint16_t opc) {
-		std::cout << opc;
-		switch (opc & 0xF000u >> 15u) {
+	void execute() {
+		//std::cout << ((opcode & 0xF000u) >> 12u) << " ";
+		switch ((opcode & 0xF000u) >> 12u) {
 			case 0:
 				OP_00E0();
+				//std::cout << " INS 0 ";
 				break;
 			case 1:
 				OP_1NNN();
+				//std::cout << " INS 1 ";
 				break;
 			case 6:
 				OP_6XKK();
@@ -137,6 +139,7 @@ public:
 				OP_ANNN();
 				break;
 			case 0xD:
+				std::cout << "Drawing";
 				OP_DXYN();
 				break;
 			default:
@@ -144,14 +147,15 @@ public:
 		}
 	}
 
-	uint16_t fetch() {
+	void fetch() {
 		uint16_t opc = (ram[program_counter] << 8) | ram[program_counter + 1]; //Maybe remove the OR
+		opcode = opc;
 		program_counter += 2;
-		return opc;
 	}
 
-	void cycleCPU() {
-		execute(fetch());
+	void CycleCPU() {
+		fetch();
+		execute();
 	}
 
 	uint8_t randomByte() {
@@ -317,8 +321,9 @@ public:
 		unsigned int val = (opcode & 0x00FF) & randVal;
 		registers[vx] = val;
 	}
-
+/*
 	void OP_DXYN() {
+		
 		unsigned int start_address = index;
 		unsigned int vx = (opcode & 0x0F00) >> 8;
 		unsigned int vy = (opcode & 0x00F0) >> 4;
@@ -352,27 +357,64 @@ public:
 
 
 
+	} */
+	
+
+void OP_DXYN()
+{
+	uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+	uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+	uint8_t height = opcode & 0x000Fu;
+
+	// Wrap if going beyond screen boundaries
+	uint8_t xPos = registers[Vx] % 64;
+	uint8_t yPos = registers[Vy] % 32;
+
+	registers[0xF] = 0;
+
+	for (unsigned int row = 0; row < height; ++row)
+	{
+		uint8_t spriteByte = ram[index + row];
+
+		for (unsigned int col = 0; col < 8; ++col)
+		{
+			uint8_t spritePixel = spriteByte & (0x80u >> col);
+			uint32_t* screenPixel = &video[(yPos + row) * 64 + (xPos + col)];
+
+			// Sprite pixel is on
+			if (spritePixel)
+			{
+				// Screen pixel also on - collision
+				if (*screenPixel == 0xFFFFFFFF)
+				{
+					registers[0xF] = 1;
+				}
+
+				// Effectively XOR with the sprite pixel
+				*screenPixel ^= 0xFFFFFFFF;
+			}
+		}
 	}
+}
 
 };
 
 
 int main(int argc, char *argv[])  {
 	const int scale = *argv[2];
-	const int window_height = 32 * scale;
-	const int window_width = 64 * scale;
 	char const* filename = argv[1];
     std::cout << "Program has started. You have selected to play " << filename << ".";
     CPU cpu = CPU();
 	Display display = Display(scale);
 	cpu.readROM(filename);
-	SetTargetFPS(60);
+	//SetTargetFPS(60);
 	while (!WindowShouldClose()) {
-		cpu.cycleCPU();
+		cpu.CycleCPU();
 		display.UpdateScreen(cpu.video);
+		/*
 		for (int i = 0; i < 32*64; ++i ){
-			std::cout << cpu.video[i];
-		}
+			std::cout << " | " << cpu.video[i] << " | ";
+		} */
 	}
 	
 	return 0;
