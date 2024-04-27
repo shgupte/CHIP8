@@ -1,5 +1,4 @@
 
-
 #include <fstream>
 #include <iostream>
 #include <chrono>
@@ -43,6 +42,7 @@ public:
 
 	uint16_t opcode;
 
+	//unsigned int video[64][32];
 	unsigned int video[64 * 32];
 
 	//Class constructor
@@ -85,7 +85,7 @@ public:
 			// Load the ROM contents into the Chip8's memory, starting at 0x200
 			for (long i = 0; i < size; ++i)
 			{
-				std::cout << "Working";
+				//std::cout << "Working";
 				ram[starting_location + i] = buffer[i];
 			}
 
@@ -95,24 +95,24 @@ public:
 	}
 
 	uint8_t fontset[fontset_size] =
-	{
-		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-		0x20, 0x60, 0x20, 0x20, 0x70, // 1
-		0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-		0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-		0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-		0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-		0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-		0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-		0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-		0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-		0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-		0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-		0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-		0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-		0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-		0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-	};
+{
+	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+	0x20, 0x60, 0x20, 0x20, 0x70, // 1
+	0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+	0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+	0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+	0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+	0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+	0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+	0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+	0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+	0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+	0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+	0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+	0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+	0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+	0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
 
 
 
@@ -122,35 +122,71 @@ public:
 		//std::cout << ((opcode & 0xF000u) >> 12u) << " ";
 		switch ((opcode & 0xF000u) >> 12u) {
 			case 0:
-				OP_00E0();
+				if (opcode == 0x00E0) {
+					OP_00E0();
+				}
+
+			/* if (opcode == 0x00EE) {
+					OP_00EE();
+				} */
+
 				//std::cout << " INS 0 ";
 				break;
 			case 1:
 				OP_1NNN();
 				//std::cout << " INS 1 ";
 				break;
+		/*	case 2:
+				OP_2NNN();
+				break;
+			case 3:
+				OP_3XKK();
+				break;
+			case 4: 
+				OP_4XKK();
+				break;
+			case 5:
+				OP_5XY0();
+				break; */
 			case 6:
 				OP_6XKK();
 				break;
 			case 7:
 				OP_7XKK();
 				break;
+		/*	case 8:
+				runCorrectEight();
+				break;
+			case 9:
+				OP_9XY0();
+				break; */
 			case 0xA:
 				OP_ANNN();
 				break;
+		/*	case 0xB:
+				OP_BNNN();
+				break;
+			case 0xC:
+				OP_CXKK();
+				break; */
 			case 0xD:
 				std::cout << "Drawing";
 				OP_DXYN();
 				break;
+			/*case 0xF:
+				runCorrectF();
+				break; */
 			default:
 				std::cout << "Error. Instruction was called for but not found";
+				std::cout << ((opcode & 0xF000u) >> 12u);
 		}
 	}
 
 	void fetch() {
 		uint16_t opc = (ram[program_counter] << 8) | ram[program_counter + 1]; //Maybe remove the OR
-		opcode = opc;
 		program_counter += 2;
+		opcode = opc;
+		
 	}
 
 	void CycleCPU() {
@@ -171,11 +207,70 @@ public:
 		memset(video, 0, sizeof(video));
 	}
 
+	void runCorrectEight(){
+		switch (opcode & 0x000F) {
+			case 0:
+				OP_8XY0();
+				break;
+			case 1:
+				OP_8XY1();
+				break;
+			case 2:
+				OP_8XY2();
+				break;
+			case 3:
+				OP_8XY3();
+				break;
+			case 4:
+				OP_8XY4();
+				break;
+			case 5: 
+				OP_8XY5();
+				break;
+			case 6:
+				OP_8XY6();
+				break;
+			case 7:
+				OP_8XY7();
+				break;
+			default:
+				break;
+			}
+
+	}
+
+	void runCorrectF() {
+		switch (opcode & 0x00FF) {
+			case 0x07: 
+				OP_FX07();
+				break;
+			case 0x15:
+				OP_FX15();
+				break;
+			case 0x1E: 
+				OP_FX1E();
+				break;
+			case 0x29:
+				OP_FX29();
+				break;
+			case 0x33:
+				OP_FX33();
+				break;
+			case 0x55:
+				OP_FX55();
+				break;
+			case 0x65:
+				OP_FX65();
+				break;
+		}
+	}
+
 	//Return from subroutine
 	void OP_00EE() {
 		//The stack pointer always points to the top of the stack.
+		--stack_pointer;
 		program_counter = stack[stack_pointer];
-		stack_pointer--;
+		
 	}
 
 	//Jump
@@ -255,7 +350,15 @@ public:
 	void OP_8XY4() {
 		unsigned int vx = opcode & 0x0F00 >> 8;
 		unsigned int vy = opcode & 0x00F0 >> 4;
-		registers[vx] ^= registers[vy];
+		unsigned int sum = registers[vx] + registers[vy];
+
+		if (sum > 255) {
+			registers[0xF] = 1;
+		} else {
+			registers[0xF] = 0;
+		}
+
+		registers[vx] = sum & 0xFF;
 	}
 
 	void OP_8XY5() {
@@ -321,44 +424,6 @@ public:
 		unsigned int val = (opcode & 0x00FF) & randVal;
 		registers[vx] = val;
 	}
-/*
-	void OP_DXYN() {
-		
-		unsigned int start_address = index;
-		unsigned int vx = (opcode & 0x0F00) >> 8;
-		unsigned int vy = (opcode & 0x00F0) >> 4;
-		unsigned int x_pos = (registers[vx]) % 64; //Modulus allows these positions to wrap around the screen
-		unsigned int y_pos = (registers[vy]) % 32;
-		unsigned int height = opcode & 0x000F;
-
-		registers[0xF] = 0; //May be set to 1 based on collision.
-		
-		//Drawing row by row using sprite data
-		for (int i = 0; i < height; ++height) {
-			unsigned int sprite = ram[index + i];
-
-			for (int j = 0; i < 8; ++j) {
-				unsigned int spritePixel = sprite & (0x80u >> j); //Pretty sure this is just gettingthe spirte to display? Gotta figure out this math later
-				unsigned int *screenPixel = &video[(y_pos + i) * 32 + (x_pos + j)]; //Using a pointer b/c its in heap memory, always dereferenced when used
-
-				if (spritePixel) {
-					// Screen pixel also on - collision
-					if (*screenPixel == 1) { //1 is on for display pixel, 0 is off
-						registers[0xF] = 1;
-					}
-
-					// Effectively XOR with the sprite pixel
-					*screenPixel ^= 1;
-				}
-			}
-
-
-		}
-
-
-
-	} */
-	
 
 void OP_DXYN()
 {
@@ -368,7 +433,7 @@ void OP_DXYN()
 
 	// Wrap if going beyond screen boundaries
 	uint8_t xPos = registers[Vx] % 64;
-	uint8_t yPos = registers[Vy] % 32;
+	uint8_t yPos = registers[Vy] % 32 ;
 
 	registers[0xF] = 0;
 
@@ -397,26 +462,126 @@ void OP_DXYN()
 	}
 }
 
+/*
+void opcodeDXYN()
+{
+    // Draws a sprite at coordinate (VX, VY)
+    // that has a width of 8 pixels and a height of N+1 pixels.
+
+    // n = height
+	uint8_t Vx = (opcode & 0x0F00u) >> 8u;
+	uint8_t Vy = (opcode & 0x00F0u) >> 4u;
+    int n = (opcode & 0x000F);
+    int width = 8;
+
+    registers[0xF] = 0;
+
+    for (int row = 0; row < n; row++)
+    {
+        // Get a row one of sprite data from the memory address in reg I (one byte per row)
+        uint8_t spriteData = ram[index + row];
+
+        // for each 8 pixels/bits in this sprite row
+        for (int col = 0; col < width; col++)
+        {
+            // if the current pixel in the sprite row is on,
+            // and the screen pixel at X,Y is on, set pixel to 0, set VF to 1
+            if ((spriteData & 0x80) > 0)
+            {
+                int x = registers[Vx] + col;
+                int y = registers[Vy] + row;
+
+                if ((x >= 0 && x < 64) && (y >= 0 && y < 32))
+                {
+                    if (video[x][y] == 1)
+                    {
+                        registers[0xF] = 1;
+                    }
+                    video[x][y] ^= 1;
+                }
+            }
+            // Point spriteData to the next bit
+            spriteData <<= 1;
+        }
+    }
+} */
+
+
+void OP_FX07() {
+	uint8_t vx = (opcode & 0x0F00u) >> 8u;
+	
+	registers[vx] = delayTimer;
+}
+
+void OP_FX15() {
+	uint8_t vx = (opcode & 0x0F00u) >> 8u;
+	
+	delayTimer = registers[vx];
+}
+
+void OP_FX1E() {
+	uint8_t vx = (opcode & 0x0F00u) >> 8u;
+	index += registers[vx];
+}
+
+void OP_FX29() {
+	uint8_t vx = (opcode & 0x0F00u) >> 8u;
+	uint8_t digit = registers[vx];
+
+	index = fontset_address0 + (5 * digit);
+}
+
+void OP_FX33() {
+	uint8_t vx = (opcode & 0x0F00u) >> 8u;
+	uint8_t value = registers[vx];
+
+	ram[index + 2] = value % 10;
+	value /= 10;
+
+	ram[index + 1] = value % 10;
+	value /= 10;
+
+	ram[index] = value % 10;
+
+}
+
+void OP_FX55() {
+	uint8_t vx = (opcode & 0x0F00u) >> 8u;
+
+	for (uint8_t i = 0; i <= vx; ++i) {
+		registers[i] = ram[index + i];
+	}
+}
+
+void OP_FX65() {
+	uint8_t vx = (opcode & 0x0F00u) >> 8u;
+
+	for (uint8_t i = 0; i <= vx; ++i) {
+		ram[index + i] = registers[i];
+	}
+}
+
 };
 
 
-int main(int argc, char *argv[])  {
-	const int scale = *argv[2];
+int main(int argc, char* argv[])  {
 	char const* filename = argv[1];
+	CPU cpu = CPU();
     std::cout << "Program has started. You have selected to play " << filename << ".";
-    CPU cpu = CPU();
-	Display display = Display(scale);
+    std::cout<<(sizeof(cpu.video)/sizeof(cpu.video[0]));
+	Display display = Display(20);
 	cpu.readROM(filename);
-	//SetTargetFPS(60);
+	
+	SetTargetFPS(5);
 	while (!WindowShouldClose()) {
 		cpu.CycleCPU();
 		display.UpdateScreen(cpu.video);
-		/*
-		for (int i = 0; i < 32*64; ++i ){
+
+
+		/*for (int i = 0; i < 32*64; ++i ){
 			std::cout << " | " << cpu.video[i] << " | ";
 		} */
 	}
-	
 	return 0;
 	
 }

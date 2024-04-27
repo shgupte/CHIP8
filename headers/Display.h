@@ -11,6 +11,6 @@ class Display {
     Display(int scale);
     ~Display();
 
-    void UpdateScreen(unsigned int vid_array[]);
+    void UpdateScreen(unsigned int vid_array[64*32]);
 
 };
